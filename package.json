@@ -6,21 +6,26 @@
   "scripts": {
     "clean": "rm -rf dist",
     "build": "npm run clean && tsup",
-    "start": "npm run build && node -r dotenv/config dist/app.cjs dotenv_config_path=.env"
+    "start": "npm run build && node -r dotenv/config dist/app.cjs dotenv_config_path=.env",
+    "watch": "npm run build && WATCH=true node -r dotenv/config dist/app.cjs dotenv_config_path=.env"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@types/fs-extra": "^9.0.13",
     "@types/markdown-it": "^12.2.3",
+    "@types/node": "^17.0.21",
     "@typescript-eslint/eslint-plugin": "^4.32.0",
     "@typescript-eslint/parser": "^4.32.0",
     "dotenv": "^10.0.0",
-    "eslint": "^7.32.0",
     "esbuild": "^0.14.25",
+    "eslint": "^7.32.0",
     "typescript": "^4.6.2"
   },
   "dependencies": {
+    "chokidar": "^3.5.3",
+    "fs-extra": "^10.0.1",
     "markdown-it": "^12.3.2",
     "markdown-it-sub": "^1.0.0",
     "markdown-it-sup": "^1.0.0",
