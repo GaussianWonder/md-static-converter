@@ -2,6 +2,11 @@
 
 This is some description
 
+## Other pages
+
+1. Test page is [here](./otherPages/test.md)
+2. Other page is [here](./otherPages/other.md)
+
 ## Subtitle
 
 * item1
@@ -21,5 +26,3 @@ This is some description
 This is **bold text**, and some *italic too*.
 
 This is [an example](https://google.com) of a link.
-
-Go to some other page [here](./folder/other.html).

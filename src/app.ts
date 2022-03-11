@@ -30,6 +30,7 @@ if (!shouldWatch) {
     ignoreInitial: false,
     usePolling: false,
   }).on('all', (event, path) => {
+    // TODO maybe delete the file?
     if (event === 'unlink') return;
 
     convertIndividualMarkdownToHTML(path, MD);

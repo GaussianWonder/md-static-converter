@@ -7,7 +7,7 @@
     "clean": "rm -rf dist",
     "build": "npm run clean && tsup",
     "start": "npm run build && node -r dotenv/config dist/app.cjs dotenv_config_path=.env",
-    "watch": "npm run build && WATCH=true node -r dotenv/config dist/app.cjs dotenv_config_path=.env"
+    "watch": "npm run start && WATCH=true node -r dotenv/config dist/app.cjs dotenv_config_path=.env"
   },
   "keywords": [],
   "author": "",

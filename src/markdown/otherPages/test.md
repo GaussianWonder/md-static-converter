@@ -4,4 +4,6 @@
 
 [some link](https://google.com)
 
-[some md link](./otherPages/other.md)
+[some md link](../index.md)
+
+![image](../assets/git_profile.png)

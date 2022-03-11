@@ -24,9 +24,7 @@ export const assertExportFSTree = (): void => {
 export const convertMarkdownToHTML = (
   md: MarkdownIt,
 ): void => {
-  markdownFiles.forEach((file) => {
-    convertIndividualMarkdownToHTML(file, md);
-  });
+  markdownFiles.forEach((file) => convertIndividualMarkdownToHTML(file, md));
 };
 
 export type MarkdownPath = string;
@@ -44,11 +42,15 @@ export type MarkdownProcessor = (markdownFile: MarkdownFile) => MarkdownFile;
 
 export const MarkdownFiles = new Map<MarkdownPath, [MarkdownFile, ProcessedMarkdown]>();
 
-export const readMarkdownFile = (path: string): MarkdownFile => {
-  const content = fsExtra.readFileSync(path, 'utf8');
+const createHashFrom = (content: string): string => {
   const hashSum = crypto.createHash('sha256');
   hashSum.update(content);
-  const hash = hashSum.digest('hex');
+  return hashSum.digest('hex');
+}
+
+export const readMarkdownFile = (path: string): MarkdownFile => {
+  const content = fsExtra.readFileSync(path, 'utf8');
+  const hash = createHashFrom(content);
   return {
     path,
     hash,
@@ -56,8 +58,7 @@ export const readMarkdownFile = (path: string): MarkdownFile => {
   };
 };
 
-const fixRelativeLinkReferences: MarkdownProcessor = (mdFile) => {
-  const { path: fpath, hash, content } = mdFile;
+const fixRelativeLinkReferences: MarkdownProcessor = ({ path: fpath, hash, content }) => {
   if (MarkdownFiles.has(fpath)) {
     const [prev, rendered] = MarkdownFiles.get(fpath)!;
     // if the hash is identical to the old one, return the processed content
@@ -67,20 +68,48 @@ const fixRelativeLinkReferences: MarkdownProcessor = (mdFile) => {
     }
   }
 
-  const newContent = content.split(/\r?\n/).map((line) => {
-    const matches = [...line.matchAll(/\[([\w\s\d]+)\]\(((?:\/|\.\/|#)[\w\d./]+)\)/g)];
+  const newContent = content.split(/\n/).map((line) => {
+    // check for relative links
+    const matches = [...line.matchAll(/\[([\w\s\d]+)\]\(((?:\.\/|\.\.\/)[\w\d./]+)\)/g)];
     if (matches.length === 0) return line;
     let newLine = line;
     matches.forEach((match) => {
-      const pathParse = path.parse(match[2]);
-      // TODO this can break if path name includes folder.md.name names
-      const newPath = pathParse.ext === '.md' ? match[2].replace('.md', '.html') : match[2];
-      newLine = newLine.replace(match[0], `[${match[1]}](${newPath})`);
+      const [ matchedContent, alias, link ] = match;
+      if (!matchedContent || !alias || !link) return;
+
+      const pathParse = path.parse(link);
+      if (pathParse.ext === '.md') {
+        // this is a markdown reference, replace it with html
+        const newPath = path.join(path.dirname(link), `${pathParse.name}.html`);
+        const newLink = `[${alias}](${newPath})`;
+        newLine = newLine.replace(matchedContent, newLink);
+      } else {
+        // this is some other reference, copy it to htmlPath so the reference is valid
+        const markdownFilePath = path.join(path.dirname(fpath), link);
+        if (!fsExtra.existsSync(markdownFilePath)) return;
+
+        const pathDiff = path.relative(markdownPath, markdownFilePath);
+        const htmlFilePath = path.join(
+          htmlPath,
+          path.dirname(pathDiff),
+          pathParse.base,
+        );
+
+        if (!fsExtra.existsSync(htmlFilePath)) {
+          fsExtra.createFileSync(htmlFilePath);
+        }
+
+        fsExtra.copyFileSync(markdownFilePath, htmlFilePath);
+      }
     });
     return newLine;
   }).join('\n');
 
-  return { path: fpath, hash, content: newContent };
+  return {
+    path: fpath,
+    hash: createHashFrom(newContent),
+    content: newContent,
+  };
 };
 
 export const convertIndividualMarkdownToHTML = (
@@ -90,6 +119,8 @@ export const convertIndividualMarkdownToHTML = (
   const fileStats = fsExtra.statSync(file);
   if (fileStats.isFile()) {
     const filePath = path.parse(file);
+    if (filePath.ext !== '.md') return false;
+
     const newFileName = filePath.base.replace(filePath.ext, '.html');
     const pathDiff = path.relative(markdownPath, file);
     const htmlFilePath = path.join(

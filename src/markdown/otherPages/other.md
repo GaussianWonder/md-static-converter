@@ -1,3 +1,3 @@
 # Some other page
 
-[Go back](../index.html)
+[Go back](../index.md)
