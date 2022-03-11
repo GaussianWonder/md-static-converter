@@ -1,7 +1,8 @@
 import * as fs from 'fs';
+import * as path from 'path';
 import config from '../config';
 
-const { markdownPath } = config;
+const { markdownPath, htmlPath } = config;
 
 export const getFiles = (dir: string, files: string[] = []): string[] => {
   fs.readdirSync(dir).forEach((file) => {
@@ -15,4 +16,16 @@ export const getFiles = (dir: string, files: string[] = []): string[] => {
   return files;
 };
 
+// TODO missleading name
 export const markdownFiles = getFiles(markdownPath);
+
+export const toHtmlDomain = (src: string): string => {
+  const filePath = path.parse(src);
+  const pathDiff = path.relative(markdownPath, src);
+  return path.join(
+    htmlPath,
+    path.dirname(pathDiff),
+    filePath.ext === '.md' ? `${filePath.name}.html` : filePath.base,
+  );
+}
+

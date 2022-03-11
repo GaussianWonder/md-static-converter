@@ -1,7 +1,8 @@
 import * as chokidar from 'chokidar';
+import * as fsExtra from 'fs-extra';
 
 import MD from './utils/markdowner';
-import { markdownFiles } from './utils/paths';
+import { markdownFiles, toHtmlDomain } from './utils/paths';
 import { assertExportFSTree, convertMarkdownToHTML, convertIndividualMarkdownToHTML } from './utils/convertor';
 import config from './config';
 import { exit } from 'process';
@@ -30,8 +31,15 @@ if (!shouldWatch) {
     ignoreInitial: false,
     usePolling: false,
   }).on('all', (event, path) => {
-    // TODO maybe delete the file?
-    if (event === 'unlink') return;
+    if (event === 'unlink') {
+      const htmlFilePath = toHtmlDomain(path);
+      if (fsExtra.pathExistsSync(htmlFilePath)) {
+        // TODO linked resources in the md are not deleted
+        //* postpone this to some other day, it is not a priority
+        fsExtra.unlinkSync(htmlFilePath);
+      }
+      return;
+    }
 
     convertIndividualMarkdownToHTML(path, MD);
   });
