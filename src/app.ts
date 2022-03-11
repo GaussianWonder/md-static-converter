@@ -35,7 +35,7 @@ if (!shouldWatch) {
       const htmlFilePath = toHtmlDomain(path);
       if (fsExtra.pathExistsSync(htmlFilePath)) {
         // TODO linked resources in the md are not deleted
-        //* postpone this to some other day, it is not a priority
+        //! postpone this to some other day, it is not a priority
         fsExtra.unlinkSync(htmlFilePath);
       }
       return;
