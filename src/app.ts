@@ -1,11 +1,22 @@
 import * as chokidar from 'chokidar';
 import * as fsExtra from 'fs-extra';
+import { exit } from 'process';
 
+import config from './config';
+import {
+  assertExportFSTree,
+  convertMarkdownToHTML,
+  convertIndividualMarkdownToHTML
+} from './processor/convertor';
+import {
+  fixRelativeLinkReferences,
+} from './processor/mappers';
 import MD from './utils/markdowner';
 import { markdownFiles, toHtmlDomain } from './utils/paths';
-import { assertExportFSTree, convertMarkdownToHTML, convertIndividualMarkdownToHTML } from './utils/convertor';
-import config from './config';
-import { exit } from 'process';
+
+const transformationPipeline = [
+  fixRelativeLinkReferences,
+];
 
 const {
   htmlPath,
@@ -14,7 +25,7 @@ const {
 } = config;
 
 if (!htmlPath || !markdownFiles) {
-  console.error('Nothing to do. Check .env.example');
+  console.error('Nothing to do. Check .env.example and create a proper .env file.');
   exit(1);
 }
 
@@ -22,7 +33,7 @@ if (!shouldWatch) {
   // delete everything
   assertExportFSTree();
   // generate from current identified files
-  convertMarkdownToHTML(MD);
+  convertMarkdownToHTML(MD, transformationPipeline);
 } else {
   // watch everything for changes, generate on the fly
   //* This will fire for the discovery of the files themselves too
@@ -41,6 +52,6 @@ if (!shouldWatch) {
       return;
     }
 
-    convertIndividualMarkdownToHTML(path, MD);
+    convertIndividualMarkdownToHTML(path, MD, transformationPipeline);
   });
 }
