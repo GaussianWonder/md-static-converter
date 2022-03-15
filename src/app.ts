@@ -5,18 +5,13 @@ import { exit } from 'process';
 import config from './config';
 import {
   assertExportFSTree,
-  convertMarkdownToHTML,
-  convertIndividualMarkdownToHTML
-} from './processor/convertor';
+} from './utils/folder_structure';
 import {
-  fixRelativeLinkReferences,
+  fixRelativeLinkReferences, includeOtherMarkdownFiles, wrapMarkdownInLayout,
 } from './processor/mappers';
 import MD from './utils/markdowner';
 import { markdownFiles, toHtmlDomain } from './utils/paths';
-
-const transformationPipeline = [
-  fixRelativeLinkReferences,
-];
+import Processor from './processor';
 
 const {
   htmlPath,
@@ -29,11 +24,22 @@ if (!htmlPath || !markdownFiles) {
   exit(1);
 }
 
+const processor = new Processor(MD, [
+  includeOtherMarkdownFiles,
+  wrapMarkdownInLayout,
+  fixRelativeLinkReferences, // keep this at the end of the pipeline, so it doesn't mess up with other plugins
+]);
+
 if (!shouldWatch) {
   // delete everything
   assertExportFSTree();
-  // generate from current identified files
-  convertMarkdownToHTML(MD, transformationPipeline);
+  const processed = processor.processAll(markdownFiles);
+  const success = processor.exportAll(processed);
+  success.forEach((val, index) => {
+    if (!val) {
+      console.error(`Failed at ${markdownFiles[index]}`);
+    }
+  });
 } else {
   // watch everything for changes, generate on the fly
   //* This will fire for the discovery of the files themselves too
@@ -52,6 +58,13 @@ if (!shouldWatch) {
       return;
     }
 
-    convertIndividualMarkdownToHTML(path, MD, transformationPipeline);
+    const footprint = processor.process(path);
+    let success = false;
+    if (footprint) {
+      success = processor.export(footprint);
+    }
+    if (!success) {
+      console.error(`Failed at ${path}`);
+    }
   });
 }
